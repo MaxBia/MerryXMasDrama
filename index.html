@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gratta e Vinci</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* Nasconde lo scroll */
+      font-family: Arial, sans-serif;
+    }
+
+    /* Video di sfondo */
+    .background-video {
+      position: fixed; /* Fissa il video nella finestra */
+      top: 0;
+      left: 0;
+      width: 100vw;  /* Larghezza a tutta la finestra */
+      height: 100vh; /* Altezza a tutta la finestra */
+      object-fit: cover; /* Fa sì che il video copra l'intera area senza deformarsi */
+      z-index: -1; /* Lo mette dietro il contenuto */
+    }
+
+    /* Contenitore principale */
+    .main-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Bordi laterali */
+    .border-image {
+      width: 17%;
+      height: 100%;
+      background-image: url('https://cdn.glitch.global/d8ec91b8-aae0-47c0-8ef1-6ceccfbf3724/thumbnails%2Fcontornodx.png?1735047531724');
+      background-repeat: repeat-y;
+      background-size: contain;
+      z-index: 1;
+    }
+    
+    .border-image-right {
+      width: 17%;
+      height: 100%;
+      background-image: url('https://cdn.glitch.global/d8ec91b8-aae0-47c0-8ef1-6ceccfbf3724/contornodx.png?v=1735054923130');
+      background-repeat: repeat-y;
+      background-size: contain;
+      z-index: 1;
+    }
+
+    /* Area della scratch card */
+    .scratch-card-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* Contenitore del gratta e vinci */
+    .scratch-card {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-gap: 10px;
+      position: relative;
+      width: 80vw;
+      height: 80vw;
+      max-width: 600px;
+      max-height: 600px;
+    }
+
+    .scratch-cell {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      cursor: pointer;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .scratch-cell img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cover {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.3s ease;
+    }
+
+    .scratch-cell.enlarged {
+      z-index: 100;
+      transform: scale(2.5);
+      transition: transform 0.3s ease;
+    }
+
+    .scratch-cell .cover.scratched {
+      animation: scratch-off 2.3s ease forwards;
+    }
+
+    @keyframes scratch-off {
+      from {
+        clip-path: circle(100% at 50% 50%);
+      }
+      to {
+        clip-path: circle(0% at 50% 50%);
+      }
+    }
+
+    .disabled {
+      pointer-events: none;
+    }
+
+    /* Popup natalizio */
+      
+      /* Overlay */
+      .overlay {        
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9998; /* Assicurati che sia davanti al resto del contenuto */
+      }
+
+      /* Popup */
+      .popup {
+        font-family: 'Pacifico', cursive; /* Aggiunge il font Pacifico */
+        font-size: 1.5em; /* Opzionale, per aumentare la leggibilità */
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0); /* Partenza dal centro e ridotto */
+        background-image: url('https://cdn.glitch.global/80ce1a87-2ebd-49af-a9af-8f2acdaeb906/thumbnails%2Fpopup.jpg?1735123708364');
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        z-index: 9999; /* Davanti all'overlay */
+        opacity: 0;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+        color:black;
+      }
+
+      /* Animazione per mostrare il popup */
+      .popup.show {
+        transform: translate(-50%, -50%) scale(1); /* Espande al centro */
+        opacity: 1;
+      }
+
+      /* Testo "Buon Natale!" in verde */
+    .green-text {
+      color: green;
+      font-weight: bold;
+      font-size: 1.2em;
+      font-family: 'Pacifico', cursive; /* Aggiunge il font solo a questa parte */
+    }
+
+    .proceed-button {
+        background-color: #008000; /* Verde */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        font-size: 1em;
+        cursor: pointer;
+        font-family: 'Pacifico', cursive; /* Usa il font Pacifico */
+    }
+
+    .proceed-button:hover {
+        background-color: #006400; /* Verde scuro */
+    }
+
+    
+    </style>
+</head>
+<body>
+  <!-- Video di sfondo -->
+  <video class="background-video" autoplay muted loop>
+    <source src="https://cdn.glitch.global/88510612-0c42-4178-ac1e-04c6bf19ead8/XMsaBackground.mp4?v=1734805615597" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <audio autoplay loop>
+      <source src="Jingle Bells (Instrumental).mp3" type="audio/mp3">
+      Il tuo browser non supporta il tag audio.
+  </audio>
+  
+  <!-- Layout principale con bordi laterali -->
+  <div class="main-container">
+    <div class="border-image"></div>
+
+    <div class="scratch-card-container">
+      <div class="scratch-card">
+        <!-- Celle -->
+  <div class="scratch-cell" data-id="1">
+    <img src="IMAGE1.jpg" alt="Image 1">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div><div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div><div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  <div class="scratch-cell" data-id="2">
+    <img src="IMAGE2.jpg" alt="Image 2">
+    <div class="cover" style="background-image: url('https://cdn.glitch.global/19c6e167-3142-43f9-b807-0260e6abd07f/present.png?v=1734815657306');"></div>
+  </div>
+  </div>
+  </div>
+
+  <div class="border-image-right"></div>
+  </div>
+
+
+  <script>
+    let counter = 0;
+    const cells = document.querySelectorAll('.scratch-cell');
+    const scratchCard = document.querySelector('.scratch-card');
+
+    cells.forEach(cell => {
+      cell.addEventListener('click', () => {      
+
+        counter += 1;
+
+        switch (counter) {         
+          case 2:
+          case 4:
+          case 6:
+            // Seconda cella svelata
+            updateImage('https://cdn.glitch.global/d8ec91b8-aae0-47c0-8ef1-6ceccfbf3724/thumbnails%2Fsciarpa.png?1735061751173');
+            break;
+          case 3:
+          case 5:
+          case 10:
+            // Terza cella svelata
+            updateImage('https://cdn.glitch.global/d8ec91b8-aae0-47c0-8ef1-6ceccfbf3724/thumbnails%2Fcuffie.png?1735061911375');
+            break;
+
+            case 7:
+            case 8:
+            case 12:
+              updateImage('https://cdn.glitch.global/d8ec91b8-aae0-47c0-8ef1-6ceccfbf3724/thumbnails%2Fviaggio.png?1735081020674');
+            break;
+
+                           case 13:
+                           // Disabilita tutte le celle
+                           updateImage('https://cdn.glitch.global/d8ec91b8-aae0-47c0-8ef1-6ceccfbf3724/thumbnails%2Fviaggio.png?1735081020674');
+                           cells.forEach(cell => {
+                             cell.classList.add('disabled');
+                           });
+                            youWonPopUp();
+                           break;
+                      
+          default:
+            // Default per altre celle
+            updateImage('https://cdn.glitch.global/d8ec91b8-aae0-47c0-8ef1-6ceccfbf3724/fissante.png?v=1735060803365');
+            break;
+        }
+
+        // Dopo l'animazione, rimuovi l'ingrandimento
+        setTimeout(() => {
+          cell.classList.remove('enlarged');
+        }, 2300);
+
+        // Disabilita la cella cliccata
+        cell.classList.add('disabled');
+
+        // Ingrandisci la cella
+        cell.classList.add('enlarged');
+
+        // Attiva l'animazione di "grattare via"
+        const cover = cell.querySelector('.cover');
+        cover.classList.add('scratched');
+        
+      });
+    });
+  
+    function updateImage(imageUrl) {
+      cells.forEach(cell => {
+        if (!cell.classList.contains('disabled')) {
+          const img = cell.querySelector('img'); // Seleziona l'elemento <img>
+          img.src = imageUrl; // Cambia l'immagine sottostante
+        }
+      });
+    }
+
+    function youWonPopUp() {
+      setTimeout(() => {
+        const overlay = document.createElement('div');
+        overlay.classList.add('overlay');
+
+        const popup = document.createElement('div');
+        popup.classList.add('popup');
+
+        // Aggiungi il testo con "Buon Natale!" in verde
+        popup.innerHTML = `Congratulazioni!<br>
+          Hai vinto un viaggio aereo e un alloggio per un weekend!<br>
+          La destinazione è da decidere assieme!<br>
+          <span class="green-text">Buon Natale amore ❤️!</span>`;
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(popup);
+
+        // Aggiungi la classe per far partire l'animazione
+        setTimeout(() => {
+          popup.classList.add('show');
+        }, 50); // Ritardo breve per consentire il rendering prima dell'animazione
+      }, 3000); // Attendi 3 secondi prima di mostrare il popup
+    }
+
+    function startPopUp() {
+        const overlay = document.createElement('div');
+        overlay.classList.add('overlay');
+
+        const popup = document.createElement('div');
+        popup.classList.add('popup');
+
+        // Aggiungi il testo con "Buon Natale!" in verde e un pulsante per procedere
+        popup.innerHTML = `
+            <p>Benvenuta!<br>
+            Gioca al Gratta&Vinci di Natale e scopri cosa ti verrà regalato!<br>
+            Le prime 4 caselle uguali che gratterai indicheranno il tuo regalo di Natale!<br>
+            <span class="green-text">Buon Natale!</span></p>
+            <button class="proceed-button">Inizia</button>
+        `;
+
+        // Aggiungi l'overlay e il popup al body
+        document.body.appendChild(overlay);
+        document.body.appendChild(popup);
+
+        // Aggiungi evento al bottone per rimuovere il popup e overlay
+        const button = popup.querySelector('.proceed-button');
+        button.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            document.body.removeChild(popup);
+        });
+
+        // Aggiungi la classe per far partire l'animazione
+        setTimeout(() => {
+          popup.classList.add('show');
+        }, 50); // Ritardo breve per consentire il rendering prima dell'animazione
+    }
+
+    // Esegui la funzione quando il documento è pronto
+    document.addEventListener('DOMContentLoaded', startPopUp);
+
+   
+  </script>
+</body>
+</html>
